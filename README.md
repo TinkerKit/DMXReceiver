@@ -22,3 +22,7 @@ The TinkerKit set each individual output up to full brightness. This test mode i
 to 0 (all switches down). While in this mode, any incoming DMX data is ignored. Once the address is changed 
 from 0, pressing the RESET button will return the device to normal operation.
 
+The firmware allows you to use the DMX receiver module using a mosfet output or a relay one.
+The output mode can be selected changing the value of the define OUTPUT_MODE in this way:
+MOSFET for mosfet output
+RELAY for relay output.
