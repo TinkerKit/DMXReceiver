@@ -145,7 +145,7 @@ void loop()
     address4 = 1;
 
 
-  /*Initialization of addresses 5-6-7-8-9 in base of a treshold. The treshold avoid noise*/
+  /*Initialization of address bit 5-6-7-8-9 based on a threshold. The threshold avoid noise*/
   if( analogRead(SW5) <= TRH)
     address5 = 1;
   else
