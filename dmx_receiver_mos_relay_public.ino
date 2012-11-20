@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /*
 - customization 20/09/2012
  - ATMEGA32u4
@@ -748,10 +747,3 @@ SIGNAL(USART1_RX_vect)
 tail:
   asm("nop");
 }
-
-
-
-
-
-
->>>>>>> update, changed demo function
