@@ -67,8 +67,6 @@ volatile unsigned int dmxCount = 0 ;
 volatile unsigned int ch1,ch2,ch3,ch4;
 volatile unsigned int MASTER;
 
-int tmp0,tmp1,tmp2,tmp3,tmp4,tmp5; //variables for analog outputs
-
 /*Initialization of USART*/
 void init_USART()
 {
