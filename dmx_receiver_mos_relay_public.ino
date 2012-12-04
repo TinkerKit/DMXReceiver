@@ -39,10 +39,22 @@ Here you have to select the output mode accordingly to the receiver type you are
 #define OUTPUT_MODE MOSFET
 #define THR 20 //threshold for analogRead
 
-#define PWMpin4 6 // PWM OUT1
-#define PWMpin1 10 // PWM OUT4
-#define PWMpin2 9 // PWM OUT3
-#define PWMpin3 5 // PWM OUT2
+#if OUTPUT_MODE == RELAY
+
+#define PWMpin4 6 // PWM OUT4
+#define PWMpin1 10 // PWM OUT1
+#define PWMpin2 9 // PWM OUT2
+#define PWMpin3 5 // PWM OUT3
+
+#else
+
+#define PWMpin1 6 // PWM OUT1
+#define PWMpin4 10 // PWM OUT4
+#define PWMpin3 9 // PWM OUT3
+#define PWMpin2 5 // PWM OUT2
+
+#endif
+
 
 
 #define SW1 8 // DIP1
