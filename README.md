@@ -1,4 +1,4 @@
-DMXReceiver
+# DMXReceiver
 
 Techinal Specifications
 Nominal Input Voltage (DC) 9 to 24 Vdc
@@ -7,22 +7,45 @@ Output Current 	2.5A Max/Ch
 Number of DMX Channels 	4
 Addressing DMX Range 	1 to 509
 
-Setting Address 
+# Advanced features - Smart mode (Activated by turning Switch#10 on):
+
+Guidance to use
+
+1. Turn Switch #10 on, rest switches off  and restart board
+2. Put board in Learning mode by turning Switch #9 on
+3. Turn off all DMX light
+4. Turn on Switch#1 on and then use all lights, which you want to associate with Relay#1
+5. Turn off Switch1 and all DMX lights
+6. Repeat learning for channels 2-4 (with appropriate switches 2-4)
+7. Turn off Swithc#9 (Learning mode off, all changes will be written to EEPROM)
+
+* When Switch#9 off - Switches 1-8 will define delay, between all DMX channels, associated with Relay turned to off and Relay turned off
+(Relay turnes on immediatelly when at least, 1 associated DMX channel using)
+
+[SmartMode designed to use togetger with LightHub Smarthome controller](https://github.com/anklimov/lighthub)
+
+* When Switch #10 turned  off - the board will working as normal DMX relay
+
+* Setting Address 
+
 The DMX address is set using the first 9 switches of the DMX address switch. 
 The address is set as a binary number (with switch 1 the LSB). As the unit is a 4 channel receiver, it will respond 
 to data in the set address, and the following 3 addresses in the DMX data stream. 
 
-Using With DMX Input 
+* Using With DMX Input  
+
 In order to use the TinkerKit DMX to PWM Converter with a DMX feed, simply set the desired address and connect the 
 DMX feed to the DMX input. Remember to terminate the DMX feed at the end of the chain with a 120Ω resistor between 
 the DMX + and - lines.
 
-Test Mode 
+* Test Mode 
+
 The TinkerKit set each individual output up to full brightness. This test mode is entered by setting the DMX address 
 to 0 (all switches down). While in this mode, any incoming DMX data is ignored. Once the address is changed 
 from 0, pressing the RESET button will return the device to normal operation.
 
-The firmware allows you to use the DMX receiver module using a mosfet output or a relay one.
+* The firmware allows you to use the DMX receiver module using a mosfet output or a relay one.
 The output mode can be selected changing the value of the define OUTPUT_MODE in this way:
 MOSFET for mosfet output
 RELAY for relay output.
+
