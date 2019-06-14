@@ -2,6 +2,9 @@
 - customization 20/09/2012
  - ATMEGA32u4
  - Board DMX Receiver V2 - TinkerKit
+
+ - customization 03/05/2019
+ - SmartMode added 
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -82,8 +85,8 @@ volatile unsigned int smartMode;
 volatile unsigned int offDelay;
 
 
-bool learningMode;
-byte dmxArray[512];
+volatile bool learningMode;
+byte dmxArray[512+1];
 
 
 #define CH_1 1
@@ -212,15 +215,24 @@ void setup()
   
   if (smartMode)
   {
-  Serial.println("Loading EEPROM data"); 
-  EEPROM.get(0, dmxArray);           
+   if (analogRead(SW9) <= THR) 
+        {
+        Serial.println("Entering learning mode & clear settings");
+        learningMode = 1;  
+        memset(dmxArray,0,sizeof(dmxArray));
+        }  
+    else
+    {   
+      Serial.println("Loading EEPROM data"); 
+      EEPROM.get(0, dmxArray);
+    }
+               
   for (byte i=0;i<CHANNELS;i++) 
         {
           analogWrite(outPins[i],0);
           chanDelay[i]=0;
         } 
-  offDelay = ((address1*1) + (address2*2) + (address3*4) + (address4*8) + (address5*16) + (address6*32) + (address7*64) + (address8*128))*10;
-  if (!offDelay) offDelay=1; //1 Sec
+  offDelay = ((address1*1) + (address2*2) + (address3*4) + (address4*8) + (address5*16) + (address6*32) + (address7*64) + (address8*128));
   
   }
   else //Legacy mode
@@ -246,15 +258,15 @@ void loop()
          else  analogWrite(outPins[i],0);      
       }
   Serial.println("]");
-    if (!learningMode && analogRead(SW9) <= THR) 
+    if (!learningMode && (analogRead(SW9) <= THR)) 
         {
         Serial.println("Entering learning mode");
         learningMode = 1;  
-        memset(dmxArray,0,512);
+       // memset(dmxArray,0,512);
         }  
     
 
-  if( learningMode && analogRead(SW9) > THR)
+  if( learningMode && (analogRead(SW9) > THR))
     {
       Serial.println("Leaving learning mode, saving data to EEPROM");
       EEPROM.put(0,dmxArray);
@@ -346,7 +358,7 @@ void demo()
 SIGNAL(USART1_RX_vect)
 {
   int temp = UCSR1A;
-  int dmxByte = UDR1;
+  volatile int dmxByte = UDR1;
 
 
   if (temp&(1<<DOR1))	// Data Overrun?
@@ -385,17 +397,25 @@ SIGNAL(USART1_RX_vect)
     break;
 
   case SMART:
-    if (dmxCount>512) break;
+    if (dmxCount>512) {dmxStatus = BREAK;break;}
     
     digitalWrite(LED,HIGH);
     if (learningMode)
     {
       if (dmxByte) // if light is on on appropriate channel - set bit
-                  {
-                    if (!digitalRead(SW1)) dmxArray[dmxCount]  |= CH_1; 
-                    if (!digitalRead(SW2)) dmxArray[dmxCount]  |= CH_2; 
-                    if (!digitalRead(SW3)) dmxArray[dmxCount]  |= CH_3; 
-                    if (!digitalRead(SW4)) dmxArray[dmxCount]  |= CH_4; 
+                  { 
+                    byte localDelay = 0;
+                    
+                    if( analogRead(SW5) <= THR) localDelay |= 16;
+                    if( analogRead(SW6) <= THR) localDelay |= 32;
+                    if( analogRead(SW7) <= THR) localDelay |= 64;
+                    if( analogRead(SW8) <= THR) localDelay |= 128;
+                    dmxArray[dmxCount] &= 15; //Reset previosly saved delay for the channel
+                    if (!digitalRead(SW1)) dmxArray[dmxCount]  |= (CH_1 | localDelay); 
+                    if (!digitalRead(SW2)) dmxArray[dmxCount]  |= (CH_2 | localDelay); 
+                    if (!digitalRead(SW3)) dmxArray[dmxCount]  |= (CH_3 | localDelay); 
+                    if (!digitalRead(SW4)) dmxArray[dmxCount]  |= (CH_4 | localDelay); 
+                    
                   }
     }
     else //operating Mode
@@ -403,8 +423,12 @@ SIGNAL(USART1_RX_vect)
       if (dmxByte)  
         for (byte i=0;i<CHANNELS;i++)
           if (dmxArray[dmxCount] & (1<<i)) 
-          {
-            chanDelay[i]=offDelay;
+          { 
+            byte localDelay = dmxArray[dmxCount] >> 4;
+            if (localDelay == 15) localDelay=offDelay;  //Default Delay
+            
+            if (!(chanDelay[i]=localDelay*10)) chanDelay[i] =1;
+            
             analogWrite(outPins[i],255);
           }
      }
