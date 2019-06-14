@@ -15,14 +15,15 @@ Guidance to use
 2. Put board in Learning mode by turning Switch #9 on
 3. Turn off all DMX light
 4. Turn on Switch#1 on and then use all lights, which you want to associate with Relay#1
-5. Turn off Switch1 and all DMX lights
+5. Turn off Switch#1 and all DMX lights
 6. Repeat learning for channels 2-4 (with appropriate switches 2-4)
-7. Turn off Swithc#9 (Learning mode off, all changes will be written to EEPROM)
+7. Turn off Switch#9 (Learning mode off, all changes will be written to EEPROM)
 
-* When Switch#9 off - Switches 1-8 will define delay, between all DMX channels, associated with Relay turned to off and Relay turned off
-(Relay turnes on immediatelly when at least, 1 associated DMX channel using)
+* When Switch#9 off - Switches 1-8 will define delay, between all DMX channels, associated with Relay turned to off and Relay turned off (in 10th seconds)
+* Relay turnes on immediatelly when at least, 1 associated DMX channel in use
 
 [SmartMode designed to use togetger with LightHub Smarthome controller](https://github.com/anklimov/lighthub)
+Recommeded for control AC power of LED transformers 
 
 * When Switch #10 turned  off - the board will working as normal DMX relay
 
