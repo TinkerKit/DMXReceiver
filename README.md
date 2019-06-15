@@ -1,7 +1,7 @@
 # DMXReceiver
 
 Techinal Specifications
-Nominal Input Voltage (DC) 9 to 24 Vdc
+Nominal Input Voltage (DC) 9 to 24 Vdc (24V is to much for Relays board)
 Input Current 	10 A Max
 Output Current 	2.5A Max/Ch
 Number of DMX Channels 	4
@@ -11,16 +11,18 @@ Addressing DMX Range 	1 to 509
 
 Guidance to use
 
-1. Turn Switch #10 on, rest switches off  and restart board
+1. Turn Switch #10 on (SmartMode on now), Switch#5-#8 on (default delay), rest switches off  and restart board
 2. Put board in Learning mode by turning Switch #9 on
 3. Turn off all DMX light
 4. Turn on Switch#1 on and then use all lights, which you want to associate with Relay#1
 5. Turn off Switch#1 and all DMX lights
 6. Repeat learning for channels 2-4 (with appropriate switches 2-4)
 7. Turn off Switch#9 (Learning mode off, all changes will be written to EEPROM)
+8. Ajust default delay by switches 1-8 and restart board (delay in tens of seconds. If 0: it will be 1 second delay)
 
 * When Switch#9 off - Switches 1-8 will define delay, between all DMX channels, associated with Relay turned to off and Relay turned off (in 10th seconds)
 * Relay turnes on immediatelly when at least, 1 associated DMX channel in use
+* You can ajust individual delay for every channel at step 4, using switches 5-8 (in tens of seconds). Value 15 (on-on-on-on) is reserved for default delay.
 
 [SmartMode designed to use togetger with LightHub Smarthome controller](https://github.com/anklimov/lighthub)
 Recommeded for control AC power of LED transformers 
