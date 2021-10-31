@@ -5,6 +5,9 @@
 
  - customization 03/05/2019
  - SmartMode added 
+
+ - customization 31/10/2021
+ - Command line interface added & some bugs fixed
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -19,6 +22,7 @@
  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <Arduino.h>
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -29,6 +33,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <EEPROM.h>
+#include "Cmd.h"
+#include <utils.h>
+#include <avr/wdt.h>
 
 #define F_OSC 16000000 // Clock frequency
 #define BAUD_RATE 250000
@@ -108,13 +115,175 @@ void init_USART()
   UCSR1C = (1<<USBS1) | (3<<UCSZ10);	// 8bit 2 stop
 }
 
+int cmdFunctionHelp(int arg_cnt, char **args)
+{
+
+    Serial.println(F("\nUse these commands: 'help' - this text\n"
+                          "'relay #' - set relay # setup for (1-4)\n"
+                          "'set <DMX channel #> [<delay in 10s>]' - associate relay with channel\n"
+                          "'del <DMX channel #>' - de-associate relay with channel \n"
+                          "'print' - print association table\n"
+                          "'save' - save current config in NVRAM\n"
+                          "'load' - load config from NVRAM\n"
+//                          "'log [serial_loglevel]' - define log level (0..7)\n"
+                          "'kill' - test watchdog\n"
+                          "'clear' - clear association table in RAM\n"
+//                          "'reboot' - reboot controller"
+));
+return 1;                            
+}
+
+uint8_t currentRelay = 0;
+
+int cmdFunctionRelay(int arg_cnt, char **args)
+{
+if (arg_cnt == 2) currentRelay=atoi(args[1]);
+
+debugSerialPort.print(F("Current relay: "));
+debugSerialPort.println(currentRelay);
+return 1;                            
+}
+
+int cmdFunctionAdd(int arg_cnt, char **args)
+{
+int localDelay = 15;
+
+if (!currentRelay)
+    {
+      debugSerialPort.println(F("No Current relay defined, use 'relay' command"));
+      return 0;
+    }  
+
+if (arg_cnt<2)
+    {
+      debugSerialPort.println(F("usage: 'add #DMXchannel [delay_in_10sec]"));
+      return 0;
+    }  
+
+int currentChan = atoi(args[1]);
+if (currentChan<1 || currentChan>512)
+    {
+      debugSerialPort.println(F("DMX Channel must be in 1..512 range"));
+      return 0;
+    } 
+
+if (arg_cnt>2)
+    {
+     localDelay = atoi(args[2]); 
+     if (localDelay>15)
+          {
+            debugSerialPort.println(F("Delay must be in 0..14 10s range"));
+            return 0;
+          } 
+    }    
+
+                    dmxArray[currentChan] &= 15; //Reset previosly saved delay for the channel
+                    dmxArray[currentChan]  |= ((1<<(currentRelay-1)) | (localDelay<<4)); 
+return 1;                            
+}
+
+int cmdFunctionDel(int arg_cnt, char **args)
+{
+
+if (!currentRelay)
+    {
+      debugSerialPort.println(F("No Current relay defined, use 'relay' command"));
+      return 0;
+    }  
+
+if (arg_cnt<2)
+    {
+      debugSerialPort.println(F("usage: 'del #DMXchannel"));
+      return 0;
+    }  
+
+int currentChan = atoi(args[1]);
+if (currentChan<1 || currentChan>512)
+    {
+      debugSerialPort.println(F("DMX Channel must be in 1..512 range"));
+      return 0;
+    } 
+
+dmxArray[currentChan] &= ~(1<<(currentRelay-1));
+
+return 1;                            
+}
+
+int cmdFunctionDelay(int arg_cnt, char **args)
+{
+
+return 1;                            
+}
+int cmdFunctionPrint(int arg_cnt, char **args)
+{
+for (short r=0; r<CHANNELS; r++)
+    {
+    debugSerialPort.print("Relay:");
+    debugSerialPort.println(r+1);  
+    for (short c=1; c<=512; c++)
+        if (dmxArray[c] & (1<<r)) 
+                {
+                debugSerialPort.print(c);
+                debugSerialPort.print(":");
+                debugSerialPort.print(dmxArray[c]>>4);
+                debugSerialPort.println(";");
+                }
+    }
+return 1;                            
+}
+
+int cmdFunctionLog(int arg_cnt, char **args)
+{
+
+return 1;                            
+}
+
+int cmdFunctionClear(int arg_cnt, char **args)
+{
+memset(dmxArray,0,512);
+return 1;                            
+}
+
+int cmdFunctionReboot(int arg_cnt, char **args)
+{
+softRebootFunc(); //Hmm just hung
+return 1;                            
+}
+
+int cmdFunctionKill(int arg_cnt, char **args)
+{  //WDT not working on Leonardo
+    for (byte i = 1; i < 20; i++) {
+        delay(1000);
+        debugSerialPort.println(i);
+    };
+return 1;                            
+}
+
+int cmdFunctionLoad(int arg_cnt, char **args)
+{
+      Serial.println("Loading EEPROM data"); 
+      EEPROM.get(0, dmxArray);
+return 1;                            
+}
+
+int cmdFunctionSave(int arg_cnt, char **args)
+{
+      Serial.println("Saving EEPROM data"); 
+      EEPROM.put(0, dmxArray);
+return 1;                            
+}
 
 
 void setup()
 {	
+
+ #ifdef WDT_ENABLE 
+  wdt_reset(); // reset watchdog counter
+  wdt_disable();
+  wdt_enable(WDTO_8S);
+ #endif 
   /*Declaration of variables*/
   volatile unsigned int address1,address2,address3,address4,address5,address6,address7,address8,address9;
-  
   /*Initialization of INPUT*/
   pinMode(SW1,INPUT);
   pinMode(SW2,INPUT);
@@ -210,6 +379,22 @@ void setup()
   
   Serial.begin(9600);  
   delay(1000);
+  cmdInit();
+  cmdAdd("relay", cmdFunctionRelay);
+  cmdAdd("help", cmdFunctionHelp);
+  cmdAdd("save", cmdFunctionSave);
+  cmdAdd("load", cmdFunctionLoad);
+  cmdAdd("print", cmdFunctionPrint);
+  cmdAdd("set", cmdFunctionAdd);
+  cmdAdd("del", cmdFunctionDel);
+  //cmdAdd("delay", cmdFunctionDelay);
+  //cmdAdd("log", cmdFunctionLog);
+  cmdAdd("clear", cmdFunctionClear);
+  //cmdAdd("reboot", cmdFunctionReboot);
+  cmdAdd("kill", cmdFunctionKill);
+
+ 
+
 
   learningMode = 0;
   
@@ -245,19 +430,41 @@ void setup()
    if (dmxStartAddress || smartMode) init_USART(); //Call to initialization of USART
 }
 
+uint32_t printTimer;
+uint32_t processTimer;
 
 void loop()
 {
+  #ifdef WDT_ENABLE  
+   wdt_reset();
+  #endif
+  cmdPoll();
   if (smartMode)
   {
-  Serial.print("[");  
-  for (byte i=0; i<CHANNELS; i++)
-    {
-      Serial.print(chanDelay[i]);Serial.print(" ");  
-      if (chanDelay[i]) chanDelay[i]--;
-         else  analogWrite(outPins[i],0);      
-      }
-  Serial.println("]");
+
+  if (isTimeOver(printTimer,millis(),10000))
+              {
+              Serial.print("[");  
+              for (byte i=0; i<CHANNELS; i++)
+                {
+                  Serial.print(chanDelay[i]);Serial.print(" ");     
+                  }
+              Serial.println("]");
+              printTimer=millis();
+              }
+
+  if (isTimeOver(processTimer,millis(),100))
+              {
+              for (byte i=0; i<CHANNELS; i++)
+                {
+                  if (chanDelay[i]) chanDelay[i]--;
+                    else  analogWrite(outPins[i],0);      
+                  }
+
+              processTimer=millis();
+              digitalWrite(LED,LOW);
+              }
+
     if (!learningMode && (analogRead(SW9) <= THR)) 
         {
         Serial.println("Entering learning mode");
@@ -278,8 +485,8 @@ void loop()
     demo();                //call the demo function
   }
   
-delay (1000);  
-digitalWrite(LED,LOW);
+//delay (1000);  
+//digitalWrite(LED,LOW);
 
 
 
@@ -420,16 +627,27 @@ SIGNAL(USART1_RX_vect)
     }
     else //operating Mode
     {
-      if (dmxByte)  
+     // if (dmxByte)  
         for (byte i=0;i<CHANNELS;i++)
           if (dmxArray[dmxCount] & (1<<i)) 
           { 
-            byte localDelay = dmxArray[dmxCount] >> 4;
+            unsigned int localDelay = dmxArray[dmxCount] >> 4;
             if (localDelay == 15) localDelay=offDelay;  //Default Delay
             
-            if (!(chanDelay[i]=localDelay*10)) chanDelay[i] =1;
-            
-            analogWrite(outPins[i],255);
+            if (dmxByte)  
+            { //ON               
+              analogWrite(outPins[i],255);
+              if (!localDelay) localDelay =1;
+                 else localDelay=localDelay * 100; //tens of second
+
+              if (chanDelay[i]<localDelay) chanDelay[i] = localDelay;  
+
+            }
+            else //OFF
+            {
+              if (!localDelay) analogWrite(outPins[i],0); 
+            }
+
           }
      }
     dmxCount++;  

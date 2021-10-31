@@ -18,14 +18,27 @@ Guidance to use
 5. Turn off Switch#1 and all DMX lights
 6. Repeat learning for channels 2-4 (with appropriate switches 2-4)
 7. Turn off Switch#9 (Learning mode off, all changes will be written to EEPROM)
-8. Ajust default delay by switches 1-8 and restart board (delay in tens of seconds. If 0: it will be 1 second delay)
+8. Ajust default delay by switches 1-8 and restart board (delay in tens of seconds. If 0: it will be no delay)
 
 * When Switch#9 off - Switches 1-8 will define delay, between all DMX channels, associated with Relay turned to off and Relay turned off (in 10th seconds)
 * Relay turnes on immediatelly when at least, 1 associated DMX channel in use
-* You can ajust individual delay for every channel at step 4, using switches 5-8 (in tens of seconds). Value 15 (on-on-on-on) is reserved for default delay.
+* You can ajust individual delay for every channel at step 4, using switches 5-8 (in tens of seconds). Value 15 (on-on-on-on) is reserved for default delay (defined at step 8).
 
 [SmartMode designed to use togetger with LightHub Smarthome controller](https://github.com/anklimov/lighthub)
 Recommeded for control AC power of LED transformers 
+
+* in SmartMode possible to use CLI interface on USB Serial port to control association table, save it to NVRAM and load fron NVRAM (USE 9600,N,8,1 Serial line parameters)
+
+*  Use these commands: 'help' - this text
+*  'relay #' - set relay # setup for (1-4)\n
+*  'set <DMX channel #> [<delay in 10s>]' - associate relay with channel
+*  'del <DMX channel #>' - de-associate relay with channel 
+*  'print' - print association table
+*  'save' - save current config in NVRAM
+*  'load' - load config from NVRAM
+*  'kill' - test watchdog (there are no WDT yet)
+*  'clear' - clear association table in RAM
+*  'reboot' - reboot controller (disabled now)
 
 * When Switch #10 turned  off - the board will working as normal DMX relay
 
