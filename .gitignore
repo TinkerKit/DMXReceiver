@@ -11,5 +11,9 @@
 *.la
 *.a
 .git
+.pioenvs
+.piolibdeps
 .pio
-.pio/*
+.clang_complete
+.gcc-flags.json
+.DS_Store
