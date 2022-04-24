@@ -10,3 +10,10 @@
 *.lai
 *.la
 *.a
+.git
+.pioenvs
+.piolibdeps
+.pio
+.clang_complete
+.gcc-flags.json
+.DS_Store
