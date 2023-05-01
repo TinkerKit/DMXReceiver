@@ -94,6 +94,7 @@ volatile unsigned int offDelay;
 
 volatile bool learningMode;
 byte dmxArray[512+1];
+#define chanMinOffset 514
 
 
 #define CH_1 1
@@ -102,6 +103,8 @@ byte dmxArray[512+1];
 #define CH_4 8
 #define CHANNELS 4
 volatile unsigned int chanDelay[CHANNELS];
+volatile byte chanMin[CHANNELS];
+//volatile unsigned int chanMax[CHANNELS];
 
 
 /*Initialization of USART*/
@@ -122,6 +125,7 @@ int cmdFunctionHelp(int arg_cnt, char **args)
                           "'relay #' - set relay # setup for (1-4)\n"
                           "'set <DMX channel #> [<delay in 10s>]' - associate relay with channel\n"
                           "'del <DMX channel #>' - de-associate relay with channel \n"
+                          "'min <1..255>' set treshold value for current relay\n"
                           "'print' - print association table\n"
                           "'save' - save current config in NVRAM\n"
                           "'load' - load config from NVRAM\n"
@@ -139,10 +143,53 @@ int cmdFunctionRelay(int arg_cnt, char **args)
 {
 if (arg_cnt == 2) currentRelay=atoi(args[1]);
 
+if (!currentRelay || currentRelay>CHANNELS) 
+  {
+    debugSerialPort.println(F("invalid relay#"));
+    return 0;
+  }
 debugSerialPort.print(F("Current relay: "));
 debugSerialPort.println(currentRelay);
 return 1;                            
 }
+
+int cmdFunctionMin(int arg_cnt, char **args)
+{
+uint8_t min = 1;  
+if (arg_cnt < 2)
+{
+    debugSerialPort.println(F("Minimal values for relays:"));
+  for (int i=0;i<CHANNELS;i++)
+      {
+        debugSerialPort.println(chanMin[i]);
+      }
+ return 0;     
+}
+
+if (arg_cnt == 2) min=atoi(args[1]);
+
+if (min<1 || min>255) 
+        {
+        debugSerialPort.println(F("invalid value"));  
+        return 0;
+        }
+
+if (!currentRelay)
+    {
+      debugSerialPort.println(F("No Current relay defined, use 'relay' command"));
+      return 0;
+    } 
+
+chanMin[currentRelay-1]=min;
+EEPROM.put(chanMinOffset+currentRelay-1,min);
+
+debugSerialPort.print(F("Set min value "));
+debugSerialPort.print(min);
+debugSerialPort.print(" for current relay: ");
+debugSerialPort.println(currentRelay);
+return 1;                            
+}
+
 
 int cmdFunctionAdd(int arg_cnt, char **args)
 {
@@ -240,7 +287,7 @@ return 1;
 
 int cmdFunctionClear(int arg_cnt, char **args)
 {
-memset(dmxArray,0,512);
+memset(dmxArray,0,sizeof(dmxArray));
 return 1;                            
 }
 
@@ -392,6 +439,7 @@ void setup()
   cmdAdd("clear", cmdFunctionClear);
   //cmdAdd("reboot", cmdFunctionReboot);
   cmdAdd("kill", cmdFunctionKill);
+  cmdAdd("min", cmdFunctionMin);
 
  
 
@@ -425,6 +473,14 @@ void setup()
    Serial.print("Start Address: "); Serial.println(dmxStartAddress);  
   }
   
+  EEPROM.get(chanMinOffset,chanMin);
+  debugSerialPort.println(F("Minimal values for relays:"));
+  for (int i=0;i<CHANNELS;i++)
+      {
+        if (!chanMin[i]) chanMin[i]=1;
+        debugSerialPort.println(chanMin[i]);
+      }
+
   digitalWrite(DE,LOW);
  
    if (dmxStartAddress || smartMode) init_USART(); //Call to initialization of USART
@@ -634,7 +690,7 @@ SIGNAL(USART1_RX_vect)
             unsigned int localDelay = dmxArray[dmxCount] >> 4;
             if (localDelay == 15) localDelay=offDelay;  //Default Delay
             
-            if (dmxByte)  
+            if (dmxByte>=chanMin[i])  
             { //ON               
               analogWrite(outPins[i],255);
               if (!localDelay) localDelay =1;
