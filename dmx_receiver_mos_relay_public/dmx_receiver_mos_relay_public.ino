@@ -103,7 +103,7 @@ byte dmxArray[512+1];
 #define CH_4 8
 #define CHANNELS 4
 volatile unsigned int chanDelay[CHANNELS];
-volatile byte chanMin[CHANNELS];
+byte chanMin[CHANNELS];
 //volatile unsigned int chanMax[CHANNELS];
 
 
@@ -288,6 +288,9 @@ return 1;
 int cmdFunctionClear(int arg_cnt, char **args)
 {
 memset(dmxArray,0,sizeof(dmxArray));
+memset(chanMin,1,sizeof(chanMin));
+EEPROM.put(chanMinOffset,chanMin);
+
 return 1;                            
 }
 
